@@ -8,15 +8,18 @@
   </head>
   <body>
     <div class="quiz-container">
-      <div id="start-screen">
+      <div id="language-bar">
         <select id="language-select">
           <option value="ru">Русский</option>
           <option value="el">Ελληνικά</option>
         </select>
+      </div>
+      <div id="start-screen">
         <h1 id="quiz-title"></h1>
         <button id="start-btn"></button>
       </div>
       <div id="quiz-content" style="display: none">
+        <div id="question-number"></div>
         <div id="progress-bar"></div>
         <div id="image-container">
           <img id="question-image" src="" alt="Изображение вопроса" />
@@ -26,6 +29,7 @@
         <div id="controls">
           <button id="pause-btn"></button>
           <button id="reset-btn"></button>
+          <button id="back-btn"></button>
         </div>
         <p id="result"></p>
         <div id="timer-display">

@@ -38,6 +38,8 @@ export const ru = {
     reset: "Начать сначала",
     modalText: "У вас есть сохраненный прогресс. Продолжить с последнего места?",
     modalContinue: "Продолжить",
-    modalRestart: "Начать заново"
+    modalRestart: "Начать заново",
+    questionNumber: "Вопрос {current} из {total}",
+    back: "Назад"
   }
 };

@@ -12,6 +12,7 @@ let isPaused = false;
 
 const startScreen = document.getElementById('start-screen');
 const quizContent = document.getElementById('quiz-content');
+const questionNumber = document.getElementById('question-number');
 const progressBar = document.getElementById('progress-bar');
 const questionImage = document.getElementById('question-image');
 const questionText = document.getElementById('question-text');
@@ -24,6 +25,7 @@ const quizTitle = document.getElementById('quiz-title');
 const startBtn = document.getElementById('start-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const resetBtn = document.getElementById('reset-btn');
+const backBtn = document.getElementById('back-btn');
 const modal = document.getElementById('modal');
 const modalText = document.getElementById('modal-text');
 const modalContinue = document.getElementById('modal-continue');
@@ -100,6 +102,9 @@ function togglePause() {
 function updateStartScreen() {
   quizTitle.textContent = translations[currentLanguage].ui.title;
   startBtn.textContent = translations[currentLanguage].ui.start;
+  startScreen.style.display = 'block';
+  quizContent.style.display = 'none';
+  modal.style.display = 'none';
 }
 
 // Начало квиза
@@ -119,6 +124,9 @@ function loadQuestion() {
   }
 
   const question = questions[currentQuestion];
+  questionNumber.textContent = translations[currentLanguage].ui.questionNumber
+    .replace('{current}', currentQuestion + 1)
+    .replace('{total}', questions.length);
   questionImage.src = question.image;
   questionText.textContent = question.text;
   answersContainer.innerHTML = '';
@@ -170,7 +178,7 @@ function checkAnswer(selectedIndex) {
   setTimeout(() => {
     currentQuestion++;
     loadQuestion();
-  }, 1500);
+  }, 1000);
 }
 
 // Показ результатов
@@ -180,6 +188,7 @@ function showResult() {
   questionText.style.display = 'none';
   answersContainer.style.display = 'none';
   progressBar.style.display = 'none';
+  questionNumber.style.display = 'none';
   document.getElementById('controls').style.display = 'none';
 
   const total = translations[currentLanguage].questions.length;
@@ -207,6 +216,7 @@ function restartQuiz() {
   questionText.style.display = 'block';
   answersContainer.style.display = 'flex';
   progressBar.style.display = 'flex';
+  questionNumber.style.display = 'block';
   document.getElementById('controls').style.display = 'flex';
   result.innerHTML = '';
   loadQuestion();
@@ -216,6 +226,7 @@ function restartQuiz() {
 function updateControls() {
   pauseBtn.textContent = isPaused ? translations[currentLanguage].ui.resume : translations[currentLanguage].ui.pause;
   resetBtn.textContent = translations[currentLanguage].ui.reset;
+  backBtn.textContent = translations[currentLanguage].ui.back;
 }
 
 // Сброс квиза
@@ -224,10 +235,17 @@ function resetQuiz() {
   restartQuiz();
 }
 
+// Возврат на начальный экран
+function goBack() {
+  stopTimer();
+  updateStartScreen();
+}
+
 // События
 startBtn.addEventListener('click', startQuiz);
 pauseBtn.addEventListener('click', togglePause);
 resetBtn.addEventListener('click', resetQuiz);
+backBtn.addEventListener('click', goBack);
 modalContinue.addEventListener('click', startQuiz);
 modalRestart.addEventListener('click', () => {
   localStorage.removeItem('quizProgress');
@@ -236,12 +254,14 @@ modalRestart.addEventListener('click', () => {
 });
 languageSelect.addEventListener('change', (e) => {
   currentLanguage = e.target.value;
-  if (startScreen.style.display !== 'none') {
+  if (startScreen.style.display === 'block') {
     updateStartScreen();
   } else if (modal.style.display === 'flex') {
     modalText.textContent = translations[currentLanguage].ui.modalText;
     modalContinue.textContent = translations[currentLanguage].ui.modalContinue;
     modalRestart.textContent = translations[currentLanguage].ui.modalRestart;
+  } else if (result.textContent) {
+    showResult();
   } else {
     loadQuestion();
     timerLabel.textContent = translations[currentLanguage].ui.timerLabel;

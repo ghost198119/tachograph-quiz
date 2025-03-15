@@ -38,6 +38,8 @@ export const el = {
     reset: "Επανεκκίνηση",
     modalText: "Έχετε αποθηκευμένη πρόοδο. Να συνεχίσετε από το τελευταίο σημείο;",
     modalContinue: "Συνέχεια",
-    modalRestart: "Επανεκκίνηση"
+    modalRestart: "Επανεκκίνηση",
+    questionNumber: "Ερώτηση {current} από {total}",
+    back: "Πίσω"
   }
 };
