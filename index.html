@@ -9,14 +9,20 @@
   <body>
     <div class="quiz-container">
       <div id="language-bar">
-        <select id="language-select">
-          <option value="ru">Русский</option>
-          <option value="el">Ελληνικά</option>
-        </select>
+        <button id="lang-ru" class="lang-btn" data-lang="ru">
+          <img src="img/flag-ru.png" alt="RU" /> RU
+        </button>
+        <button id="lang-el" class="lang-btn" data-lang="el">
+          <img src="img/flag-el.png" alt="EL" /> EL
+        </button>
+        <button id="theme-toggle" class="theme-btn">
+          <span class="icon">☀️</span>
+        </button>
       </div>
       <div id="start-screen">
         <h1 id="quiz-title"></h1>
         <button id="start-btn"></button>
+        <button id="continue-btn" style="display: none"></button>
       </div>
       <div id="quiz-content" style="display: none">
         <div id="question-number"></div>
@@ -27,14 +33,16 @@
         <p id="question-text"></p>
         <div id="answers"></div>
         <div id="controls">
-          <button id="pause-btn"></button>
-          <button id="reset-btn"></button>
-          <button id="back-btn"></button>
+          <button id="skip-btn"></button>
         </div>
         <p id="result"></p>
         <div id="timer-display">
           <span id="timer-label"></span><span id="timer">00:00:00</span>
         </div>
+      </div>
+      <div id="control-bar" style="display: none">
+        <button id="reset-btn"></button>
+        <button id="to-start-btn"></button>
       </div>
       <div id="modal" class="modal" style="display: none">
         <div class="modal-content">
@@ -42,6 +50,10 @@
           <button id="modal-continue"></button>
           <button id="modal-restart"></button>
         </div>
+      </div>
+      <div id="lightbox" class="lightbox" style="display: none">
+        <img id="lightbox-image" src="" alt="Увеличенное изображение" />
+        <button id="lightbox-close">✖</button>
       </div>
     </div>
     <script type="module" src="script.js"></script>
