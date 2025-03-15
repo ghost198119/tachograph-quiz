@@ -5,7 +5,7 @@ const translations = { ru, el };
 let currentLanguage = 'ru';
 let currentQuestion = 0;
 let score = 0;
-let userAnswers = [];
+let userAnswers = []; // { selectedIndex, isCorrect, skipped }
 let timer = 0;
 let timerId = null;
 let isTestCompleted = false;
@@ -78,13 +78,13 @@ function resetState() {
 function loadProgress() {
   const progress = JSON.parse(localStorage.getItem('quizProgress'));
   if (progress) {
-    currentQuestion = progress.currentQuestion;
-    score = progress.score;
-    userAnswers = progress.userAnswers;
-    currentLanguage = progress.currentLanguage;
+    currentQuestion = progress.currentQuestion || 0;
+    score = progress.score || 0;
+    userAnswers = progress.userAnswers || [];
+    currentLanguage = progress.currentLanguage || 'ru';
     timer = progress.timer || 0;
     isTestCompleted = progress.isTestCompleted || false;
-    if (!isTestCompleted) {
+    if (!isTestCompleted && userAnswers.length > 0) {
       showModal();
     } else {
       updateStartScreen();
@@ -92,6 +92,7 @@ function loadProgress() {
   } else {
     updateStartScreen();
   }
+  timerDisplay.textContent = formatTime(timer);
 }
 
 // Показ модального окна
@@ -104,7 +105,14 @@ function showModal() {
 
 // Сохранение прогресса
 function saveProgress() {
-  const progress = { currentQuestion, score, userAnswers, currentLanguage, timer, isTestCompleted };
+  const progress = {
+    currentQuestion,
+    score,
+    userAnswers,
+    currentLanguage,
+    timer,
+    isTestCompleted
+  };
   localStorage.setItem('quizProgress', JSON.stringify(progress));
 }
 
@@ -114,7 +122,7 @@ function updateStartScreen() {
   startBtn.textContent = translations[currentLanguage].ui.start;
 
   const progress = JSON.parse(localStorage.getItem('quizProgress'));
-  if (progress && !progress.isTestCompleted) {
+  if (progress && !progress.isTestCompleted && progress.userAnswers.length > 0) {
     continueBtn.style.display = 'block';
     continueBtn.textContent = translations[currentLanguage].ui.continue;
   } else {
@@ -125,6 +133,7 @@ function updateStartScreen() {
   quizContent.style.display = 'none';
   controlBar.style.display = 'none';
   modal.style.display = 'none';
+  timerLabel.textContent = translations[currentLanguage].ui.timerLabel;
 }
 
 // Начало квиза
@@ -160,7 +169,7 @@ function loadQuestion() {
   questionNumber.textContent = translations[currentLanguage].ui.questionNumber
     .replace('{current}', currentQuestion + 1)
     .replace('{total}', questions.length);
-  questionImage.src = question.image;
+  questionImage.src = question.image || '';
   questionText.textContent = question.text;
   answersContainer.innerHTML = '';
 
@@ -174,7 +183,6 @@ function loadQuestion() {
   updateProgressBar();
   updateControls();
   timerLabel.textContent = translations[currentLanguage].ui.timerLabel;
-  timerDisplay.textContent = formatTime(timer);
 }
 
 // Обновление шкалы прогресса
@@ -186,7 +194,9 @@ function updateProgressBar() {
     circle.classList.add('progress-circle');
     if (index < userAnswers.length) {
       const answer = userAnswers[index];
-      circle.classList.add(answer.isCorrect ? 'correct' : answer.skipped ? 'skipped' : 'incorrect');
+      if (answer.isCorrect) circle.classList.add('correct');
+      else if (answer.skipped) circle.classList.add('skipped');
+      else circle.classList.add('incorrect');
     }
     progressBar.appendChild(circle);
   });
@@ -197,10 +207,8 @@ function checkAnswer(selectedIndex) {
   const questions = translations[currentLanguage].questions;
   const question = questions[currentQuestion];
   const isCorrect = selectedIndex === question.correct;
-  if (isCorrect) {
-    score++;
-  }
-  userAnswers.push({ selectedIndex, isCorrect, skipped: false });
+  if (isCorrect) score++;
+  userAnswers[currentQuestion] = { selectedIndex, isCorrect, skipped: false };
 
   const buttons = answersContainer.querySelectorAll('button');
   buttons.forEach((button, index) => {
@@ -218,7 +226,8 @@ function checkAnswer(selectedIndex) {
 
 // Пропуск вопроса
 function skipQuestion() {
-  userAnswers.push({ selectedIndex: null, isCorrect: false, skipped: true });
+  const questions = translations[currentLanguage].questions;
+  userAnswers[currentQuestion] = { selectedIndex: null, isCorrect: false, skipped: true };
   saveProgress();
   setTimeout(() => {
     currentQuestion++;
@@ -250,7 +259,7 @@ function showResult() {
 
   const scoreItem = document.createElement('div');
   scoreItem.classList.add('result-item', 'score');
-  scoreItem.innerHTML = '✅ ' + translations[currentLanguage].ui.scoreLabel + `${score} из ${total}`;
+  scoreItem.innerHTML = '✅ ' + translations[currentLanguage].ui.scoreLabel + `${score} ${translations[currentLanguage].ui.scoreSeparator} ${total}`;
 
   const percentItem = document.createElement('div');
   percentItem.classList.add('result-item', 'percent');
@@ -267,28 +276,47 @@ function showResult() {
 
   const resultContainer = document.createElement('div');
   resultContainer.classList.add('result-container');
+  resultContainer.style.maxHeight = '70vh'; // Ограничение высоты для прокрутки
+  resultContainer.style.overflowY = 'auto'; // Добавляем прокрутку
 
-  translations[currentLanguage].questions.forEach((question, index) => {
+  const questions = translations[currentLanguage].questions;
+  if (userAnswers.length !== questions.length) {
+    console.warn('userAnswers length does not match questions length:', userAnswers.length, questions.length);
+    // Заполним пропущенные ответы как пропущенные
+    for (let i = userAnswers.length; i < questions.length; i++) {
+      userAnswers[i] = { selectedIndex: null, isCorrect: false, skipped: true };
+    }
+  }
+
+  questions.forEach((question, index) => {
     const answer = userAnswers[index] || { selectedIndex: null, isCorrect: false, skipped: true };
     const resultItem = document.createElement('div');
     resultItem.classList.add('result-item');
-    resultItem.classList.add(answer.isCorrect ? 'correct' : answer.skipped ? 'skipped' : 'incorrect');
+    if (answer.isCorrect) resultItem.classList.add('correct');
+    else if (answer.skipped) resultItem.classList.add('skipped');
+    else resultItem.classList.add('incorrect');
 
     const img = document.createElement('img');
     img.src = question.image;
-    img.alt = `Вопрос ${index + 1}`;
+    img.alt = `Question ${index + 1}`;
+    img.style.maxWidth = '100px'; // Ограничим размер изображения
     img.onclick = () => {
       lightboxImage.src = question.image;
       lightbox.style.display = 'flex';
     };
 
     const text = document.createElement('div');
+    const questionTitle = translations[currentLanguage].ui.questionNumber
+      .replace('{current}', index + 1)
+      .replace('{total}', translations[currentLanguage].questions.length)
+      .split(' ')[0];
     text.innerHTML = `
-      <p><strong>Вопрос ${index + 1}:</strong> ${question.text}</p>
-      <p>${translations[currentLanguage].ui.yourAnswer}${answer.selectedIndex !== null ? question.answers[answer.selectedIndex] : 'Пропущено'}</p>
-      <p>${translations[currentLanguage].ui.correctAnswer}${question.answers[question.correct]}</p>
-      <p>${translations[currentLanguage].ui.explanationLabel}${question.explanation}</p>
+      <p><strong>${questionTitle} ${index + 1}:</strong> ${question.text}</p>
+      <p>${translations[currentLanguage].ui.yourAnswer}${answer.selectedIndex !== null ? question.answers[answer.selectedIndex] : translations[currentLanguage].ui.skip.toLowerCase()}</p>
+      <p>${translations[currentLanguage].ui.correctAnswer} ${question.answers[question.correct]}</p>
+      <p>${translations[currentLanguage].ui.explanationLabel} ${question.explanation}</p>
     `;
+    text.style.marginLeft = '10px'; // Отступ для текста
 
     resultItem.appendChild(img);
     resultItem.appendChild(text);
@@ -352,7 +380,7 @@ function switchLanguage(lang) {
     modalText.textContent = translations[currentLanguage].ui.modalText;
     modalContinue.textContent = translations[currentLanguage].ui.modalContinue;
     modalRestart.textContent = translations[currentLanguage].ui.modalRestart;
-  } else if (result.textContent) {
+  } else if (result.innerHTML) {
     showResult();
   } else {
     loadQuestion();
@@ -378,7 +406,7 @@ lightbox.onclick = (e) => {
 
 // Клавиатурная навигация
 document.addEventListener('keydown', (e) => {
-  if (quizContent.style.display === 'block' && !result.textContent) {
+  if (quizContent.style.display === 'block' && !result.innerHTML) {
     const buttons = answersContainer.querySelectorAll('button:not(:disabled)');
     if (e.key >= '1' && e.key <= '4' && buttons[e.key - 1]) {
       buttons[e.key - 1].click();
